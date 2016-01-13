@@ -53,9 +53,8 @@ class ElevatorLogic(object):
         if not ups and not downs
             self.destination_floor = None
         if goingUp():
-            dest = getMin(ups)
-            if dest < currentDest
-                currentDest = dest
+            currentDest = getMin(ups)
+
         else:
             ditto for max
         """
@@ -78,14 +77,10 @@ class ElevatorLogic(object):
                 self.get_up()
         self.log()
     def get_up(self):
-        dest = min(self.ups)
-        if dest < self.destination_floor or not self.destination_floor:
-            self.destination_floor = dest
+        self.destination_floor = min(self.ups)
 
     def get_down(self):
-        dest = max(self.downs)
-        if dest > self.destination_floor or not self.destination_floor:
-            self.destination_floor = dest
+        self.destination_floor = max(self.downs)
 
     def on_called(self, floor, direction):
         """
@@ -117,19 +112,13 @@ class ElevatorLogic(object):
         if floor == self.callbacks.current_floor:
             return
 
-        # if not self.state:
-        #     if floor > self.callbacks.current_floor:
-        #         self.ups.append(floor)
-        #     elif floor < self.callbacks.current_floor:
-        #         self.downs.append(floor)
-        #     self.update_destination()
-        #     return
         if not self.state:
             if direction == UP:
                 self.ups.append(floor)
             elif direction == DOWN:
                 self.downs.append(floor)
             self.update_destination()
+            self.update_state()
             return
 
         if self.state == direction:
@@ -174,6 +163,7 @@ class ElevatorLogic(object):
             elif floor < self.callbacks.current_floor:
                 self.downs.append(floor)
             self.update_destination()
+            self.update_state()
             return
 
         if floor > self.callbacks.current_floor and self.state == UP:
@@ -189,8 +179,22 @@ class ElevatorLogic(object):
         You should decide whether or not you want to stop the elevator.
         """
         if self.destination_floor == self.callbacks.current_floor:
+            # Clean up jobs
             if self.state == UP:
-                self.ups.remove(self.destination_floor)
+                if not self.ups:
+                    # Only way ups is empty is when we are moving up for a downs job
+                    self.downs.remove(self.destination_floor)
+                else:
+                    # Remove completed job in ups
+                    self.ups.remove(self.destination_floor)
+            elif self.state == DOWN:
+                if not self.downs:
+                    self.ups.remove(self.destination_floor)
+                else:
+                    self.downs.remove(self.destination_floor)
+
+            # Change state
+            if self.state == UP:
                 if not self.ups:
                     if self.downs:
                         self.state = DOWN
@@ -198,7 +202,6 @@ class ElevatorLogic(object):
                         # No more jobs
                         self.state = None
             elif self.state == DOWN:
-                self.downs.remove(self.destination_floor)
                 if not self.downs:
                     if self.ups:
                         self.state = UP
@@ -220,15 +223,20 @@ class ElevatorLogic(object):
         time to actually move, if necessary.
         """
         self.update_destination()
-        self.log()
+        # self.log()
         if not self.destination_floor:
             self.callbacks.motor_direction = None
             self.state = None
             return
 
+        self.update_state()
         if self.destination_floor > self.callbacks.current_floor:
             self.callbacks.motor_direction = UP
-            self.state = UP
         elif self.destination_floor < self.callbacks.current_floor:
             self.callbacks.motor_direction = DOWN
+
+    def update_state(self):
+        if self.destination_floor > self.callbacks.current_floor:
+            self.state = UP
+        elif self.destination_floor < self.callbacks.current_floor:
             self.state = DOWN
