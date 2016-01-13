@@ -60,9 +60,6 @@ class ElevatorLogic(object):
                 return
 
     def on_called(self, floor, direction):
-        if floor == self.callbacks.current_floor:
-            return
-
         if direction == UP:
             if floor not in self.ups:
                 self.ups.append(floor)
@@ -129,7 +126,7 @@ class ElevatorLogic(object):
 
     def on_ready(self):
         self.update_destination()
-        # self.log()
+        self.log()
         if not self.destination_floor:
             self.callbacks.motor_direction = None
             self.state = None
