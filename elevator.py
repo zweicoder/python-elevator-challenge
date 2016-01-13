@@ -63,6 +63,7 @@ class ElevatorLogic(object):
 
             if job:
                 self.destination_floor = job
+                return
 
     def on_called(self, floor, direction):
         if direction == UP:
@@ -131,12 +132,13 @@ class ElevatorLogic(object):
 
         if self.destination_floor == self.callbacks.current_floor:
             self.callbacks.motor_direction = None
-            if self.state == UP:
-                self.state = DOWN
+
+            if self.destination_floor in self.downs:
                 self.downs.remove(self.destination_floor)
-            elif self.state == DOWN:
-                self.state = UP
+                self.state = DOWN
+            elif self.destination_floor in self.ups:
                 self.ups.remove(self.destination_floor)
+                self.state = UP
             return
 
         self.update_state()
