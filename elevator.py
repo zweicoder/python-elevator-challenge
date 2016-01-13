@@ -26,12 +26,6 @@ class ElevatorLogic(object):
                 self.destination_floor = min(dest)
                 return
 
-            # Find largest down jobs above us since we're moving up
-            dest = filter(lambda x: x > self.callbacks.current_floor, self.downs)
-            if dest:
-                self.destination_floor = max(dest)
-                return
-
             # Find largest down jobs below us if we're gonna move down
             dest = self.downs
             if dest:
@@ -53,12 +47,6 @@ class ElevatorLogic(object):
                 self.destination_floor = max(dest)
                 return
 
-            # Smallest up jobs below us
-            dest = filter(lambda x: x < self.callbacks.current_floor, self.ups)
-            if dest:
-                self.destination_floor = min(dest)
-                return
-
             # Smallest up jobs above us
             dest = self.ups
             if dest:
@@ -71,24 +59,16 @@ class ElevatorLogic(object):
                 self.destination_floor = max(dest)
                 return
 
-
-        # self.log()
-    def get_up(self):
-
-        return min(filter(lambda x: x > self.callbacks.current_floor, self.ups))
-
-    def get_down(self):
-        self.destination_floor = max(self.downs)
-        return max(filter(lambda x: x < self.callbacks.current_floor, self.downs))
-
     def on_called(self, floor, direction):
         if floor == self.callbacks.current_floor:
             return
 
         if direction == UP:
-            self.ups.append(floor)
+            if floor not in self.ups:
+                self.ups.append(floor)
         elif direction == DOWN:
-            self.downs.append(floor)
+            if floor not in self.downs:
+                self.downs.append(floor)
 
         self.update_destination()
         if not self.state:
@@ -108,14 +88,11 @@ class ElevatorLogic(object):
             return
 
         if floor > self.callbacks.current_floor and self.state == UP:
-            self.ups.append(floor)
+            if floor not in self.ups:
+                self.ups.append(floor)
         elif floor < self.callbacks.current_floor and self.state == DOWN:
-            self.downs.append(floor)
-        elif self.state == UP and not self.ups:
-            # If no more up jobs, accept down jobs
-            self.downs.append(floor)
-        elif self.state == DOWN and not self.downs:
-            self.ups.append(floor)
+            if floor not in self.downs:
+                self.downs.append(floor)
 
         self.update_destination()
 
@@ -140,14 +117,13 @@ class ElevatorLogic(object):
                 else:
                     self.downs.remove(self.destination_floor)
                     self.state = DOWN
-
+            # self.log()
             self.callbacks.motor_direction = None
             self.destination_floor = None
             # self.update_destination()
 
     def log(self):
         print "Dest: %s" % self.destination_floor
-        print "Current: %s" % self.callbacks.current_floor
         print "ups: %s"% self.ups
         print "downs: %s" % self.downs
 
@@ -157,6 +133,16 @@ class ElevatorLogic(object):
         if not self.destination_floor:
             self.callbacks.motor_direction = None
             self.state = None
+            return
+
+        if self.destination_floor == self.callbacks.current_floor:
+            self.callbacks.motor_direction = None
+            if self.state == UP :
+                self.state = DOWN
+                self.downs.remove(self.destination_floor)
+            elif self.state == DOWN:
+                self.state = UP
+                self.ups.remove(self.destination_floor)
             return
 
         self.update_state()
